@@ -24,10 +24,6 @@ All commands should be led with an ed. (eg: ed.gif cats)
 
 * rpg — basic command, if user has no character, create one for them, otherwise display user's character data
 
-
-Props to Mr. Doob and his [code editor](http://mrdoob.com/projects/code-editor/), from which
-the inspiration to this, and some handy implementation hints, came.
-
 ### Contact Me
 If you have any questions or suggestions, feel free to get shoot me a message or get in touch:
 
