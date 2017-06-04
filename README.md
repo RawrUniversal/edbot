@@ -22,7 +22,10 @@ All commands should be led with an ed. (eg: ed.gif cats)
 
 ## RPG Plugin (WIP)
 
-* rpg — basic command, if user has no character, create one for them, otherwise display user's character data
+The RPG Plugin currently allows a user to generate a character if they don't already have one as well as fight a randomly generated monster. When a monster is defeated, the player gains XP and will potentially level up. If a user is defeated, their player is permanently deleted and store for future leader board purposes.
+
+* rpg2 — basic command, if user has no character, create one for them, otherwise display users player data.
+* rpg2.fight — generate a random monster for the player to fight.
 
 ### Contact Me
 If you have any questions or suggestions, feel free to get shoot me a message or get in touch:
