@@ -1,7 +1,3 @@
-# Ed bot by Brett Currie | v0.1 - May. 25/2017
-# https://github.com/becurrie
-# If you have any issues, check the README.md file
-
 import configparser
 import asyncio
 import logging
@@ -10,16 +6,20 @@ from datetime import datetime
 import discord
 
 # import plugin modules
-from plugins.help import help
-from plugins.flip import flip
-from plugins.gif import gif
-from plugins.joke import joke
-from plugins.member_join import member_join
-from plugins.range import range as prange
-from plugins.rpg import rpg
-from plugins.school import school
-from plugins.server import server
-from plugins.stats import stats
+from edbot.plugins.help import help
+from edbot.plugins.flip import flip
+from edbot.plugins.gif import gif
+from edbot.plugins.joke import joke
+from edbot.plugins.range import range as prange
+from edbot.plugins.rpg import rpg
+from edbot.plugins.school import school
+from edbot.plugins.server import server
+from edbot.plugins.stats import stats
+
+# rpg2 plugin
+from edbot.plugins.rpg_v2 import rpg2
+
+from edbot.plugins.member_join import member_join
 
 # setup logging system for logging to console/file
 # create a timestamp when program starts
@@ -93,6 +93,7 @@ def on_message(message):
         yield from client.send_message(message.channel, gif.get_gif_url(message.content, logger))
         stats.set_stat('gif', config_file)
 
+    # early version of rpg plugin
     # if message is ed.rpg
     elif message.content == 'ed.rpg':
         yield from client.send_message(message.channel, embed=rpg.generate_character(message.author))
@@ -123,6 +124,48 @@ def on_message(message):
         yield from client.send_message(message.channel,
                                        embed=stats.get_stats(config_file, client.user.avatar_url, time))
 
+    ###################
+    # RPG V2 COMMANDS #
+    ###################
+
+    # if message is ed.rpg2
+    elif message.content == 'ed.rpg2':
+        # first check if the user already has a character currently
+        auth = rpg2.config(logger)
+        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+
+        # if a character exists in the database already with the same message.author.id, user already has a
+        # generated character, create embeddable message for this specific character.
+        if exists:
+            em = rpg2.embed_existing_character(rpg2.db_connect(logger, auth), message.author.id)
+            yield from client.send_message(message.channel, embed=em)
+
+        # if a player does not exist in the database with the same message.author.id, user has no character,
+        # generate one for them, and make it embeddable.
+        else:
+            # generate a player for the message senders unique id, adding it to the database
+            rpg2.generate_new_character(rpg2.db_connect(logger, auth), message.author.id, message.author,
+                                        message.server.name)
+
+            yield from client.send_message(message.channel,
+                                           "You don't have a character yet, I've generated one for you!")
+
+            # create embeddable message containing all information about the player created for message author
+            em = rpg2.embed_existing_character(rpg2.db_connect(logger, auth), message.author.id)
+            yield from client.send_message(message.channel, embed=em)
+
+    # if message is ed.rpg2.fight
+    elif message.content == 'ed.rpg2.fight':
+        # first check if the user has character already created
+        auth = rpg2.config(logger)
+        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+
+        if exists:
+            msg = rpg2.fight_monster(rpg2.db_connect(logger, auth), message.author.id)
+            yield from client.send_message(message.channel, msg)
+        else:
+            yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
+                                                            "generate one!")
 
 # attempt to connect client to discord
 try:
