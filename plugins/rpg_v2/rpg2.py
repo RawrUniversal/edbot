@@ -8,6 +8,8 @@ from mysql.connector import errorcode
 import configparser
 
 
+# method to setup the database config file used for connecting to the database
+# via the db_connect method
 def config(log):
     Config = configparser.ConfigParser()
     # attempt to parse config.ini file
@@ -27,6 +29,7 @@ def config(log):
     return database_auth
 
 
+# method to connect to the database using mysql.connector
 def db_connect(log, auth):
     # attempt to connect to mysql database
     try:
@@ -43,6 +46,8 @@ def db_connect(log, auth):
     return sql_cnx
 
 
+# create a Discord Embed object to be sent to the Discord channel that the
+# original message originated from
 def embed_existing_character(cnx, author_id):
     cursor = cnx.cursor(buffered=True)
 
@@ -72,6 +77,7 @@ def embed_existing_character(cnx, author_id):
         return em
 
 
+# simple method to determine the embed color variable based on the class given to the player
 def get_class_color(player_class):
     # init color list
     colors = [0x1abc9c, 0x11806a, 0x2ecc71, 0x1f8b4c, 0x3498db, 0x206694]
@@ -93,6 +99,7 @@ def get_class_color(player_class):
     return final_color
 
 
+# check if a character exists or not based on the messages authors unique id
 def check_for_existing_char(cnx, author_id):
     cursor = cnx.cursor(buffered=True)
 
@@ -106,13 +113,24 @@ def check_for_existing_char(cnx, author_id):
         return True
 
 
+# generate a new player and send it to the database using the authors unique id as the primary key
+# and key identifying feature when looking up players
 def generate_new_character(cnx, author_id, author, author_server):
     # if the author does not have a nickname, use there username in discord instead
     if author.nick == "None":
-        player_name = author.name
+        try:
+            # attempt to grab authors username up to the first space in name
+            player_name = author.name[:author.name.index(" ")]
+        # if there is no space present, use the entire author name
+        except AttributeError as aerr:
+            player_name = author.name
+        except ValueError as verr:
+            player_name = author.name
+
     # if the user does have a nickname, attempt to use the first word in there nickname
     else:
         try:
+            # attempt to grab the authors nickname up to the first space (eg. 'John' Smith -> only John would be used
             player_name = author.name[:author.name.index(" ")]
         # if the username has no space in it, just use the authors entire nickname
         except AttributeError as aerr:
@@ -170,10 +188,6 @@ def generate_new_character(cnx, author_id, author, author_server):
     # calculate base health for generated character
     player_health = vitality * 5
 
-    # init empty color and icon vars
-    player_color = None
-    player_icon_url = None
-
     if player_class == 'Rogue':
         player_icon_url = "http://imgur.com/aw2T7kO.png"
     elif player_class == 'Warrior':
@@ -198,9 +212,10 @@ def generate_new_character(cnx, author_id, author, author_server):
     cnx.commit()
 
 
+# create a random monster with values based on the players statistics
 def fight_monster(cnx, author_id):
     # todo make more monsters
-    monster_names = ['Bat', 'Archer', 'Ogre', 'Barbarian', 'Necromancer']
+    monster_names = ['Bat', 'Archer', 'Ogre', 'Barbarian', 'Necromancer', 'Scorpion', 'Phantom', 'Titan']
 
     # generate monsters attributes based on the authors current player stats/info in database
     cursor = cnx.cursor(buffered=True)
@@ -218,8 +233,8 @@ def fight_monster(cnx, author_id):
 
         # generate enemy statistics
         enemy_name = monster_names[randint(0, len(monster_names) - 1)]
+
         rand = randint(0, 1)
-        enemy_level = Level
         if rand == 0:
             enemy_level = Level + 2
         else:
@@ -250,11 +265,9 @@ def fight_monster(cnx, author_id):
             cnx.commit()
 
             return "Oh no... {} {} has been defeated permanently by a Level {} {} in battle.".format(
-                Name, Name_Adj, enemy_level, enemy_name
-            )
+                Name, Name_Adj, enemy_level, enemy_name)
 
     # the enemy has been successfully defeated, add new stats and calculate database values
-
     player_kills = Kills + 1
     player_xp = XP + enemy_xp
     cursor.execute("UPDATE User SET XP = {}, Kills = {}, Health = {} WHERE User_ID = {}".format
