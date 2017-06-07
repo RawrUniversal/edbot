@@ -3,6 +3,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from discord import Embed
 
+from edbot.plugins.rpg_v2 import vars
+
 import mysql.connector
 from mysql.connector import errorcode
 
@@ -85,9 +87,11 @@ def embed_existing_character(cnx, author_id):
 # simple method to determine the embed color variable based on the class given to the player
 def get_class_color(player_class):
     # init color list, used when setting a Discord Embed color value
-    colors = [0x1abc9c, 0x11806a, 0x2ecc71, 0x1f8b4c, 0x3498db, 0x206694]
+    # list imported from vars.py file
+    colors = vars.colors
+
     # declare a final color initial var
-    final_color = 0x444444
+    final_color = colors[6]
 
     # pick color of players embed based on the players Class variable from the database
     if player_class == 'Rogue':
@@ -157,23 +161,16 @@ def generate_new_character(cnx, author_id, author, author_server, log):
     cursor = cnx.cursor(buffered=True)
 
     # create a list of name adjectives to follow the users name
-    adjs = ['High-pitched', 'General', 'Deadpan', 'Hushed', 'Third',  'Big',  'Hulking', 'Screeching', 'Moaning',
-            'Thankful', 'Typical', 'Conscious', 'Succinct', 'Grumpy', 'Waggish', 'Little', 'Telling', 'Obtainable',
-            'Coherent',  'Red',  'Marked', 'Steady', 'Squeamish', 'Famous', 'Tedious', 'Truthful', 'Sincere',
-            'Abusive', 'Mature', 'Short', 'Silent', 'Needy', 'Caring', 'Graceful', 'Unusual', 'Chunky', 'Draconian',
-            'Dull', 'Glib', 'Probable', 'Horrible', 'Half', 'Accessible', 'Glossy', 'Nosy', 'Witty', 'Overjoyed',
-            'Wicked', 'Proud', 'Left', 'Terrific', 'Lumpy', 'Harsh', 'Repulsive', 'Lopsided', 'Strange', 'Juicy']
+    adjs = vars.adjs
 
     # choose a random adjective to be used after the users name
     player_name_adj = 'the {}'.format(adjs[randint(0, len(adjs) - 1)])
 
-    classes = ['Rogue', 'Warrior', 'Paladin', 'Wizard', 'Archer', 'Summoner']
-    races = ['Human', 'Ogre', 'Elf', 'Dwarf', 'Gnome', 'Orc', 'Goblin', 'Gnoll', 'Minotaur', 'Pixie']
-
-    skills = ['hiding', 'gardening', 'horseback riding', 'lip reading', 'inventing', 'marksmanship', 'drawing',
-              'playing the violin', 'programming', 'heavy lifting', 'foraging', 'tracking', 'paper cutting',
-              'metalworking', 'playing the drums', 'voice impressions', 'baking', 'yo-yo tricks', 'posing',
-              'map-making', 'wrapping presents', 'knitting', 'public speaking', 'wood carving', 'boxing']
+    # set multiple vars that are used to generate a random character
+    # classes, races, and skills are list objects containing info about the generated character
+    classes = vars.classes
+    races = vars.races
+    skills = vars.skills
 
     # begin creating final vars for db
     player_class = classes[randint(0, len(classes) - 1)]
@@ -228,7 +225,7 @@ def generate_new_character(cnx, author_id, author, author_server, log):
 
 # create a random monster with values based on the players statistics
 def fight_monster(cnx, author_id):
-    monster_names = ['Bat', 'Archer', 'Ogre', 'Barbarian', 'Necromancer', 'Scorpion', 'Phantom', 'Titan']
+    monster_names = vars.monster_names
 
     # generate monsters attributes based on the authors current player stats/info in database
     cursor = cnx.cursor(buffered=True)
@@ -277,8 +274,8 @@ def fight_monster(cnx, author_id):
             cursor.execute("DELETE FROM User WHERE User_ID = {}".format(User_ID))
             cnx.commit()
 
-            return "Oh no... {} {} has been defeated permanently by a Level {} {} in battle.".format(
-                Name, Name_Adj, enemy_level, enemy_name)
+            return "Oh no... {} {} has been {} by a Level {} {} in battle.".format(
+                Name, Name_Adj, vars.death_adjs[randint(0, len(vars.death_adjs))], enemy_level, enemy_name)
 
     # the enemy has been successfully defeated, add new stats and calculate database values
     player_kills = Kills + 1
@@ -317,7 +314,7 @@ def fight_monster(cnx, author_id):
             cnx.commit()
             return "{} {} has defeated a Level {} {} successfully and has levelled up, Their HP has been " \
                    "refilled to {}/{} and they gained one point in {}!".format(Name, Name_Adj, enemy_level, enemy_name,
-                                                                               player_health, player_max_health,
+                                                                               Vitality * 7, player_max_health,
                                                                                skill_to_add)
 
     return "{} {} has defeated a Level {} {} successfully with {}/{} HP remaining, gaining {} XP points. "\
@@ -395,13 +392,14 @@ def get_free_potion(cnx, author_id):
             )
 
 
-def gen_leader_embeds(cnx, author_id):
+# generate a Discord Embed object containing the top 5 players currently living inside of the database
+def gen_leader_embeds(cnx):
     # init var to hold the pixel podium image url
     icon_url = "http://i.imgur.com/VaGOL2B.png"
 
     cursor = cnx.cursor(buffered=True)
     cursor.execute("SELECT * FROM ( SELECT * FROM User ORDER by Level ASC LIMIT 5"
-                   ") User ORDER by User.Level DESC".format(author_id))
+                   ") User ORDER by User.Level DESC")
     row = cursor.fetchall()
 
     em = Embed(color=0xFFDC3F,
@@ -422,6 +420,41 @@ def gen_leader_embeds(cnx, author_id):
     em.set_footer(text="{}".format(str(datetime.now().strftime('%b %d, %Y %H:%M'))))
 
     # set the Embed thumbnail to the icon_url set above containing the pixel podium image
+    em.set_thumbnail(url=icon_url)
+
+    return em
+
+
+# generate a Discord Embed object containing the top 5 players that have perished in the database
+def gen_fallen_heroes_embed(cnx):
+    # init a var to hold the fallen heroes image url
+    icon_url = ""
+
+    cursor = cnx.cursor(buffered=True)
+    cursor.execute("SELECT Name, Name_Adj, Level, Kills, XP, Class, Race, Server, Time_Defeated "
+                   "FROM ( SELECT * FROM Defeated_User ORDER by Level DESC LIMIT 5"
+                   ") Defeated_User ORDER by Defeated_User.Level DESC")
+    row = cursor.fetchall()
+
+    em = Embed(color=0xFF3434,
+               title="Vanquished Heroes")
+
+    # init int starting at 0 to hold the amount of users iterated over to display top 5 numbers before each name
+    current_row = 0
+    for (Name, Name_Adj, Level, Kills, XP, Class, Race, Server, Time_Defeated) in row:
+        time = datetime.strptime(str(Time_Defeated), "%Y-%m-%d %H:%M:%S").strftime('%b %d, %Y %H:%M')
+
+        current_row += 1
+        em.add_field(name="{}. {} {}".format(current_row, Name, Name_Adj),
+                     value="\nLevel: {}\nKills: {}\nCurrent XP: {}\nClass: {}\nRace: {}\nServer: {}"
+                           "\nTime Defeated: {}".format(
+                         Level, Kills, XP, Class, Race, Server, time
+                     ), inline=True)
+
+    # set footer containing timestamp of date in a string
+    em.set_footer(text="{}".format(str(datetime.now().strftime('%b %d, %Y %H:%M'))))
+
+    # set the Embed thumbnail to the icon_url set above containing the skull pixel image
     em.set_thumbnail(url=icon_url)
 
     return em
