@@ -30,6 +30,7 @@ The RPG Plugin currently mimics a very basic RPG game with limited customization
 * rpg2.potion — use one of your players potion if one is available and you aren't already full hp.
 * rpg2.freepotion — check if you have a free potion available, players may take one every 20 minutes.
 * rpg2.leaders — check the current leaderboards for all living characters.
+* rpg2.fallen — check the best players that have perished while in battle.
 
 ### Contact Me
 If you have any questions or suggestions, feel free to get shoot me a message or get in touch:
