@@ -76,7 +76,15 @@ def on_message(message):
 
     # if message is ed.flip
     if message.content == 'ed.flip':
-        yield from client.send_message(message.channel, flip.coin_flip())
+        logger.info("ED.FLIP COMMAND RECEIVED FROM {} @ {}... ATTEMPTING TO SEND MESSAGE".format(
+            message.author.name, str(datetime.utcnow())))
+        try:
+            current_flip = flip.coin_flip()
+            yield from client.send_message(message.channel, current_flip)
+            logger.info("SUCCESSFULLY SENT COIN FLIP COMMAND")
+        except:
+            logger.error(current_flip)
+
         stats.set_stat('flip', config_file)
 
     # if message starts with ed.range
@@ -129,6 +137,8 @@ def on_message(message):
     ###################
 
     # if message is ed.rpg2
+    # this is the main rpg2 plugin command, if a author has a character currently, it will display there player
+    # if they do not have a character, generate a random one for them
     elif message.content == 'ed.rpg2':
         # first check if the user already has a character currently
         auth = rpg2.config(logger)
@@ -145,7 +155,7 @@ def on_message(message):
         else:
             # generate a player for the message senders unique id, adding it to the database
             rpg2.generate_new_character(rpg2.db_connect(logger, auth), message.author.id, message.author,
-                                        message.server.name)
+                                        message.server.name, logger)
 
             yield from client.send_message(message.channel,
                                            "You don't have a character yet, I've generated one for you!")
@@ -155,6 +165,8 @@ def on_message(message):
             yield from client.send_message(message.channel, embed=em)
 
     # if message is ed.rpg2.fight
+    # generate a random enemy for the author's character to fight, if the player is killed, their player is
+    # permanently deleted, but stored separately to track fallen heroes
     elif message.content == 'ed.rpg2.fight':
         # first check if the user has character already created
         auth = rpg2.config(logger)
@@ -165,11 +177,50 @@ def on_message(message):
             yield from client.send_message(message.channel, msg)
         else:
             yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
-                                                            "generate one!")
+                                                            " generate one!")
 
-# attempt to connect client to discord
+    # if message is ed.rpg2.potion
+    # attempt to heal the player by using one of their potions
+    elif message.content == 'ed.rpg2.potion':
+        # first check if the user has character already created
+        auth = rpg2.config(logger)
+        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+
+        if exists:
+            msg = rpg2.use_potion(rpg2.db_connect(logger, auth), message.author.id)
+            yield from client.send_message(message.channel, msg)
+        else:
+            yield from client.send_message(message.channel, "You can't use a potion because you don't have a character!"
+                                                            " Type ed.rpg to generate one.")
+
+    elif message.content == 'ed.rpg2.freepotion':
+        # first check if the user has character already created
+        auth = rpg2.config(logger)
+        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+
+        if exists:
+            msg = rpg2.get_free_potion(rpg2.db_connect(logger, auth), message.author.id)
+            yield from client.send_message(message.channel, msg)
+        else:
+            yield from client.send_message(message.channel, "You can't use a potion because you don't have a character!"
+                                                            " Type ed.rpg to generate one.")
+
+    elif message.content == 'ed.rpg2.leaders':
+        auth = rpg2.config(logger)
+        em = rpg2.gen_leader_embeds(rpg2.db_connect(logger, auth))
+        yield from client.send_message(message.channel, embed=em)
+
+    elif message.content == 'ed.rpg2.fallen':
+        auth = rpg2.config(logger)
+        em = rpg2.gen_fallen_heroes_embed(rpg2.db_connect(logger, auth))
+        yield from client.send_message(message.channel, embed=em)
+
+
+
+# attempt to connect client to discord using the discord token located in config.ini file
 try:
     client.run(config_file.get('Discord', 'token'))
+# in case any error is thrown, log the error
 except client.on_error as coeerr:
-    logger.error("ERROR WHILE TRYING TO CONNECT TO CLIENT: [{}]".format(str(coeerr)))
+    logger.error("client.run error: [{}]".format(str(coeerr)))
 
