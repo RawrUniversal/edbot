@@ -3,6 +3,7 @@
 A Discord bot developed using the [Discord.py](https://github.com/Rapptz/discord.py) API Wrapper.
 
 * Developed using Python 3.4
+* MariaDB 10.1.23 mySQL Database
 
 
 ## Fun Commands:
@@ -26,6 +27,9 @@ The RPG Plugin currently allows a user to generate a character if they don't alr
 
 * rpg2 — basic command, if user has no character, create one for them, otherwise display users player data.
 * rpg2.fight — generate a random monster for the player to fight.
+* rpg2.potion — use one of your players potion if one is available and you aren't already full hp.
+* rpg2.freepotion — check if you have a free potion available, players may take one every 20 minutes.
+* rpg2.leaders — check the current leaderboards for all living characters.
 
 ### Contact Me
 If you have any questions or suggestions, feel free to get shoot me a message or get in touch:
