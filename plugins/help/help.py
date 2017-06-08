@@ -2,7 +2,12 @@ from discord import Embed
 from datetime import datetime
 
 
-def create_help_embed(icon):
+def create_help_embed(icon, log, author):
+    time = datetime.utcnow()
+    log.info("ATTEMPTING TO SEND ED.FLIP COMMAND FROM {} @ {}...".format(
+        author, time
+    ))
+
     em = Embed(color=0x00F4FF,
                title=":robot: Commands")
 
@@ -37,4 +42,5 @@ def create_help_embed(icon):
 
     em.set_thumbnail(url=icon)
 
+    log.info("SUCCESSFULLY CREATED A HELP EMBED OBJECT, RETURNING...")
     return em
