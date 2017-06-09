@@ -19,7 +19,7 @@ from edbot.plugins.stats import stats
 # rpg2 plugin
 from edbot.plugins.rpg_v2 import rpg2
 
-from edbot.plugins.member_join import member_join
+# from edbot.plugins.member_join import member_join
 
 # setup logging system for logging to console/file
 # create a timestamp when program starts
@@ -76,15 +76,8 @@ def on_message(message):
 
     # if message is ed.flip
     if message.content == 'ed.flip':
-        logger.info("ED.FLIP COMMAND RECEIVED FROM {} @ {}... ATTEMPTING TO SEND MESSAGE".format(
-            message.author.name, str(datetime.utcnow())))
-        try:
-            current_flip = flip.coin_flip()
-            yield from client.send_message(message.channel, current_flip)
-            logger.info("SUCCESSFULLY SENT COIN FLIP COMMAND")
-        except:
-            logger.error(current_flip)
-
+        current_flip = flip.coin_flip(logger, message.author.name)
+        yield from client.send_message(message.channel, current_flip)
         stats.set_stat('flip', config_file)
 
     # if message starts with ed.range
@@ -98,7 +91,7 @@ def on_message(message):
         stats.set_stat('joke', config_file)
 
     elif message.content.startswith('ed.gif'):
-        yield from client.send_message(message.channel, gif.get_gif_url(message.content, logger))
+        yield from client.send_message(message.channel, gif.get_gif_url(message.content, logger, message.author))
         stats.set_stat('gif', config_file)
 
     # early version of rpg plugin
@@ -214,7 +207,6 @@ def on_message(message):
         auth = rpg2.config(logger)
         em = rpg2.gen_fallen_heroes_embed(rpg2.db_connect(logger, auth))
         yield from client.send_message(message.channel, embed=em)
-
 
 
 # attempt to connect client to discord using the discord token located in config.ini file
