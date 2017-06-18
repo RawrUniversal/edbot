@@ -199,14 +199,14 @@ def on_message(message):
             yield from client.send_message(message.channel, "You can't use a potion because you don't have a character!"
                                                             " Type ed.rpg to generate one.")
 
-    # if message is ed.epg2.leaders
+    # if message is ed.rpg2.leaders
     # display the current leader boards for all characters still alive
     elif message.content == 'ed.rpg2.leaders':
         auth = rpg2.config(logger)
         em = rpg2.gen_leader_embeds(rpg2.db_connect(logger, auth))
         yield from client.send_message(message.channel, embed=em)
 
-    # if message is ed.epg2.fallen
+    # if message is ed.rpg2.fallen
     # display the current leader boards for all characters that have been defeated
     elif message.content == 'ed.rpg2.fallen':
         auth = rpg2.config(logger)
