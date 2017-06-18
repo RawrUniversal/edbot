@@ -94,11 +94,12 @@ def on_message(message):
         yield from client.send_message(message.channel, gif.get_gif_url(message.content, logger, message.author))
         stats.set_stat('gif', config_file)
 
-    # early version of rpg plugin
-    # if message is ed.rpg
-    elif message.content == 'ed.rpg':
-        yield from client.send_message(message.channel, embed=rpg.generate_character(message.author))
-        stats.set_stat('rpg', config_file)
+    # not in use anymore
+    # # early version of rpg plugin
+    # # if message is ed.rpg
+    # elif message.content == 'ed.rpg':
+    #     yield from client.send_message(message.channel, embed=rpg.generate_character(message.author))
+    #     stats.set_stat('rpg', config_file)
 
     # if message is ed.school
     elif message.content == 'ed.school':
@@ -116,7 +117,7 @@ def on_message(message):
 
     # if message is ed.help
     elif message.content == 'ed.help':
-        em = help.create_help_embed(client.user.avatar_url)
+        em = help.create_help_embed(client.user.avatar_url, logger, message.author)
         yield from client.send_message(message.author, embed=em)
         stats.set_stat('help', config_file)
 
@@ -199,14 +200,14 @@ def on_message(message):
             yield from client.send_message(message.channel, "You can't use a potion because you don't have a character!"
                                                             " Type ed.rpg to generate one.")
 
-    # if message is ed.rpg2.leaders
+    # if message is ed.epg2.leaders
     # display the current leader boards for all characters still alive
     elif message.content == 'ed.rpg2.leaders':
         auth = rpg2.config(logger)
         em = rpg2.gen_leader_embeds(rpg2.db_connect(logger, auth))
         yield from client.send_message(message.channel, embed=em)
 
-    # if message is ed.rpg2.fallen
+    # if message is ed.epg2.fallen
     # display the current leader boards for all characters that have been defeated
     elif message.content == 'ed.rpg2.fallen':
         auth = rpg2.config(logger)
@@ -224,10 +225,17 @@ def on_message(message):
         if exists:
             # check now if the target also has a character to fight
             target_id = rpg2.get_target_id(message)
+
+            # if the target idea has returned a ValueError, let the user know that they likely have not @'ed a player
+            if target_id[0] == "T":
+                yield from client.send_message(message.channel, target_id)
+                return
+
             # if the author is trying to fight there own character
             if target_id == message.author.id:
                 yield from client.send_message(message.channel, "You can't duel yourself!")
                 return
+
             target_exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), target_id)
             if target_exists:
                 em = rpg2.fight_player(rpg2.db_connect(logger, auth), message.author.id, message)
