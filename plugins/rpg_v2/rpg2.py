@@ -344,7 +344,7 @@ def use_potion(cnx, author_id):
     for (Name, Name_Adj, Health, Vitality, Potions) in row:
         # if the player has no potions at all, let them know they can not use this command
         if Potions == 0:
-            return "{} {} does not have any potions remaining! Try typing ed.rpg.freepotion to see if you're eligible" \
+            return "{} {} does not have any potions remaining! Try typing ed.rpg2.freepotion to see if you're eligible"\
                    " for a free potion!".format(Name, Name_Adj)
 
         # if the players health is already at max health
