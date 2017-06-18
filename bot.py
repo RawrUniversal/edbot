@@ -184,8 +184,8 @@ def on_message(message):
             msg = rpg2.use_potion(rpg2.db_connect(logger, auth), message.author.id)
             yield from client.send_message(message.channel, msg)
         else:
-            yield from client.send_message(message.channel, "You can't use a potion because you don't have a character!"
-                                                            " Type ed.rpg to generate one.")
+            yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
+                                                            " generate one!")
     # if message is ed.rpg2.freepotion
     # check the timer on author free potion field in db, if it has surpassed the current time, give them 1 free potion
     elif message.content == 'ed.rpg2.freepotion':
@@ -197,8 +197,8 @@ def on_message(message):
             msg = rpg2.get_free_potion(rpg2.db_connect(logger, auth), message.author.id)
             yield from client.send_message(message.channel, msg)
         else:
-            yield from client.send_message(message.channel, "You can't use a potion because you don't have a character!"
-                                                            " Type ed.rpg to generate one.")
+            yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
+                                                            " generate one!")
 
     # if message is ed.epg2.leaders
     # display the current leader boards for all characters still alive
