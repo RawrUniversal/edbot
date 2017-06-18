@@ -316,6 +316,19 @@ def fight_monster(cnx, author_id):
                    "refilled to {}/{} and they gained one point in {}!".format(Name, Name_Adj, enemy_level, enemy_name,
                                                                                Vitality * 7, player_max_health,
                                                                                skill_to_add)
+    # determine if defeating this monster will drop the player a health potion
+    drop = randint(1, 2)
+    if drop == 1:
+        # successful potion drop
+        cursor.execute("SELECT Potions FROM User WHERE User_ID = {}".format(author_id))
+        potions = cursor.fetchall()
+        print(potions)
+        # add a potion to the user in the database
+        cursor.execute("UPDATE User SET Potions = {} WHERE User_ID = {}".format(potions[0][0] + 1, author_id))
+        cnx.commit()
+        return "{} {} has defeated a Level {} {} successfully with {}/{} HP remaining, gaining {} XP points.\n\n" \
+               " The {} also dropped a health potion!".format(
+                Name, Name_Adj, enemy_level, enemy_name, player_health, player_max_health, enemy_xp, enemy_name)
 
     return "{} {} has defeated a Level {} {} successfully with {}/{} HP remaining, gaining {} XP points. "\
         .format(Name, Name_Adj, enemy_level, enemy_name, player_health, player_max_health, enemy_xp)
@@ -379,10 +392,10 @@ def get_free_potion(cnx, author_id):
         # next potion to 20 minutes from utcnow() and take away one potion from the player
         if now > Potion_Timer:
             cursor.execute("UPDATE User SET Potion_Timer = NOW() + INTERVAL 20 MINUTE , Potions = {}"
-                           " WHERE User_ID = {}".format(Potions + 1, author_id))
+                           " WHERE User_ID = {}".format(Potions + 3, author_id))
             cnx.commit()
             return "{} {} has claimed a free health potion! They currently have {} potions".format(Name, Name_Adj,
-                                                                                                   Potions + 1)
+                                                                                                   Potions + 3)
         # otherwise, the time until the player can claim a health potion has not passed yet, display the time remaining
         # to the message author
         else:
