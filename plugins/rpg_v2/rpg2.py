@@ -186,7 +186,7 @@ def generate_new_character(cnx, author_id, author, author_server, log):
 
     # randomly distribute skills points to the character
     for i in range(0, 100, 1):
-        rand_num = randint(0, 4)
+        rand_num = randint(0, 3)
         if rand_num == 0:
             strength += 1
         elif rand_num == 1:
@@ -250,8 +250,8 @@ def fight_monster(cnx, author_id):
         else:
             enemy_level = Level + 1
 
-        enemy_min_dmg = round(int(Strength * 0.2 + 3))
-        enemy_max_dmg = round(int(Strength * 0.5 + 5))
+        enemy_min_dmg = round(int(Level * 1.2 + 3))
+        enemy_max_dmg = round(int(Level * 1.9 + 5))
 
         enemy_health = int(Vitality * 3) + 5
 
@@ -293,7 +293,7 @@ def fight_monster(cnx, author_id):
 
         if XP >= XP_To_LvlUp:
             # choose a skill to add one point to
-            rand = randint(0, 4)
+            rand = randint(0, 3)
             if rand == 0:
                 skill_to_add = "Strength"
                 amount = Strength
@@ -303,13 +303,13 @@ def fight_monster(cnx, author_id):
             elif rand == 2:
                 skill_to_add = "Vitality"
                 amount = Vitality
-            else:
+            elif rand == 3:
                 skill_to_add = "Intellect"
                 amount = Intellect
 
             # player has levelled up
             cursor.execute("UPDATE User SET Level = {}, XP_To_LvlUp = {}, {} = {}, Health = {} WHERE User_ID = {}"
-                           .format(Level + 1, int(XP_To_LvlUp * 1.8), skill_to_add, amount + 1, int(Vitality * 7),
+                           .format(Level + 1, int(XP_To_LvlUp * 1.3), skill_to_add, amount + 1, int(Vitality * 7),
                                    author_id))
             cnx.commit()
             return "{} {} has defeated a Level {} {} successfully and has levelled up, Their HP has been " \
