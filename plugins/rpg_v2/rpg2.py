@@ -473,7 +473,11 @@ def gen_fallen_heroes_embed(cnx):
 
 def get_target_id(message):
     # extract the user id from the message content provided
-    target_id = message.content[message.content.index("<"):]
+    try:
+        target_id = message.content[message.content.index("<"):]
+    except ValueError:
+        return "That didn't seem to work, make sure you @ the person you wish to duel!"
+
     target_id_final = ''
 
     # finally, for each item in target_id var, check if it is an int, if it is, add that item to the final
