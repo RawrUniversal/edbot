@@ -275,7 +275,7 @@ def fight_monster(cnx, author_id):
             cnx.commit()
 
             return "Oh no... {} {} has been {} by a Level {} {} in battle.".format(
-                Name, Name_Adj, vars.death_adjs[randint(0, len(vars.death_adjs))], enemy_level, enemy_name)
+                Name, Name_Adj, vars.death_adjs[randint(0, len(vars.death_adjs) - 1)], enemy_level, enemy_name)
 
     # the enemy has been successfully defeated, add new stats and calculate database values
     player_kills = Kills + 1
@@ -291,7 +291,7 @@ def fight_monster(cnx, author_id):
     for (User_ID, Server, Name, Level, XP, XP_To_LvlUp, Strength, Vitality, Intellect, Dexterity, Skill_1, Skill_2,
          Skill_3, Kills, Health, Class, Race, Name_Adj, Icon_URL, Potions, Potion_Timer) in row:
 
-        if XP > XP_To_LvlUp:
+        if XP >= XP_To_LvlUp:
             # choose a skill to add one point to
             rand = randint(0, 4)
             if rand == 0:
@@ -428,7 +428,7 @@ def gen_leader_embeds(cnx):
 # generate a Discord Embed object containing the top 5 players that have perished in the database
 def gen_fallen_heroes_embed(cnx):
     # init a var to hold the fallen heroes image url
-    icon_url = ""
+    icon_url = "http://i.imgur.com/Qu9szxY.png"
 
     cursor = cnx.cursor(buffered=True)
     cursor.execute("SELECT Name, Name_Adj, Level, Kills, XP, Class, Race, Server, Time_Defeated "
@@ -447,14 +447,126 @@ def gen_fallen_heroes_embed(cnx):
         current_row += 1
         em.add_field(name="{}. {} {}".format(current_row, Name, Name_Adj),
                      value="\nLevel: {}\nKills: {}\nCurrent XP: {}\nClass: {}\nRace: {}\nServer: {}"
-                           "\nTime Defeated: {}".format(
-                         Level, Kills, XP, Class, Race, Server, time
-                     ), inline=True)
+                           "\nTime Defeated: {}".format(Level, Kills, XP, Class, Race, Server, time),
+                     inline=True)
 
     # set footer containing timestamp of date in a string
     em.set_footer(text="{}".format(str(datetime.now().strftime('%b %d, %Y %H:%M'))))
 
     # set the Embed thumbnail to the icon_url set above containing the skull pixel image
     em.set_thumbnail(url=icon_url)
-
     return em
+
+
+def get_target_id(message):
+    # extract the user id from the message content provided
+    target_id = message.content[message.content.index("<"):]
+    target_id_final = ''
+
+    # finally, for each item in target_id var, check if it is an int, if it is, add that item to the final
+    # target_id var
+    for x in target_id:
+        try:
+            int(x)
+            target_id_final += x
+        # skip this item if it can not be cast into an int type
+        except ValueError:
+            continue
+
+    return target_id_final
+
+
+def fight_player(cnx, author_id, message):
+    # extract the user id from the message content provided
+    target_id = message.content[message.content.index("<"):]
+    target_id_final = ''
+
+    # finally, for each item in target_id var, check if it is an int, if it is, add that item to the final
+    # target_id var
+    for x in target_id:
+        try:
+            int(x)
+            target_id_final += x
+        # skip this item if it can not be cast into an int type
+        except ValueError:
+            continue
+
+    # check if a target with this user id exists before continuing
+    exists = check_for_existing_char(cnx, target_id_final)
+    if exists is False:
+        return "I can't find a player that exists with that username! Do they have a character?"
+
+    # setup author player stats
+    cursor = cnx.cursor(buffered=True)
+    cursor.execute("SELECT User_ID, Name, Name_Adj, Level, Strength, Vitality, Intellect, Dexterity"
+                   " FROM User WHERE User_ID = {}".format(author_id))
+
+    player_stats = cursor.fetchall()
+
+    cursor.execute("SELECT User_ID, Name, Name_Adj, Level, Strength, Vitality, Intellect, "
+                   "Dexterity FROM User WHERE User_ID = {}".format(target_id_final))
+
+    target_player_stats = cursor.fetchall()
+
+    # set some specific vars for fight that aren't in database normally
+    player_name = player_stats[0][1]
+    player_name_adj = player_stats[0][2]
+    player_health = player_stats[0][5] * 7
+    player_min_dmg = round(int(player_stats[0][4] * 0.4 + randint(4, 10)))
+    player_max_dmg = round(int(player_stats[0][4] * 1.1 + randint(8, 16)))
+
+    target_name = target_player_stats[0][1]
+    target_name_adj = target_player_stats[0][2]
+    target_health = target_player_stats[0][5] * 7
+    target_min_dmg = round(int(target_player_stats[0][4] * 0.4 + randint(4, 10)))
+    target_max_dmg = round(int(target_player_stats[0][4] * 1.1 + randint(8, 16)))
+
+    # create an embed and give it a title detailing who is fighting who
+    em = Embed(color=0x00FF00,
+               title="{} {} ({}/{}) VS. {} {} ({}/{})".format(
+                   player_name, player_name_adj, player_health, player_health, target_name, target_name_adj,
+                   target_health, target_health))
+
+    # set etc details for embed object
+    em.set_footer(text="{}".format(str(datetime.now().strftime('%b %d, %Y %H:%M'))))
+    em.set_thumbnail(url="http://i.imgur.com/yPNEy2o.png")
+
+    # start the battle and set the first turn to 1
+    current_turn = 0
+
+    # while the players health is greater than or equal to 0, fight will continue infinitely
+    while player_health >= 0:
+        current_turn += 1
+
+        # calculate both players damage values for this current turn
+        player_turn_damage = randint(player_min_dmg, player_max_dmg)
+        target_turn_damage = randint(target_min_dmg, target_max_dmg)
+
+        # calculate the new health values for both players
+        player_health -= target_turn_damage
+        target_health -= player_turn_damage
+
+        # if the target is now dead (<= 0 HP)
+        if target_health <= 0:
+            em.add_field(name="Winner!".format(current_turn),
+                         value="{} has defeated {}!".format(player_name, target_name))
+            return em
+
+        # generic damage embed field showing both damage numbers dealt to each player
+        em.add_field(name="Turn {}".format(current_turn),
+                     value="{} hit {} for -{} damage!\n{} hit {} for -{} damage!".format(
+                         player_name, target_name, player_turn_damage, target_name, player_name, target_turn_damage))
+
+    # if the player is now dead (<= 0 HP) the while loop has been broken, add new field and return!
+    em.add_field(name="Winner!".format(current_turn),
+                 value="{} has defeated {}!".format(target_name, player_name))
+    return em
+
+
+
+
+
+
+
+
+
