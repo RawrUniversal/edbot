@@ -36,7 +36,7 @@ def create_help_embed(icon, log, author):
                        "\ned.gif — search for a gif.",
                  inline=True)
 
-    em.add_field(name='RPG2 Commands — ed.rpg2.<command>',
+    em.add_field(name='RPG2 Commands — ed.<command>',
                  value="rpg2 — basic command, if user has no character, create one for them, otherwise display users "
                        "player data."
                        "\nrpg2.fight — generate a random monster for the player to fight."
