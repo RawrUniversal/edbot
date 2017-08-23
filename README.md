@@ -21,6 +21,10 @@ All commands should be led with an ed. (eg: ed.gif cats)
 * help — recieve a private message explaining Ed's commands.
 * server — show information regarding the server Ed has recieved the request from.
 
+## Useful Commands
+
+* vidsync — generate a random http://www.sync-video.com/ room to watch videos with friends.
+
 ## Runescape Commands (OSRS)
 
 * rs.stats (username) — display a users high score stats.
