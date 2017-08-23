@@ -4,8 +4,9 @@ A Discord bot developed using the [Discord.py](https://github.com/Rapptz/discord
 
 * Developed using Python 3.4
 
-## Fun Commands:
 All commands should be led with an ed. (eg: ed.gif cats)
+
+## Fun Commands:
 
 * flip — flip a coin.
 * gif (keyword) — search for a random gif using (keyword) criteria.
