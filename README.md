@@ -21,17 +21,12 @@ All commands should be led with an ed. (eg: ed.gif cats)
 * help — recieve a private message explaining Ed's commands.
 * server — show information regarding the server Ed has recieved the request from.
 
-## RPG Plugin (WIP)
+## Runescape Commands (OSRS)
 
-The RPG Plugin currently mimics a very basic RPG game with limited customization. When a character of yours is killed by an enemy, the character is permenantly deleted and a new one must be generated. Users may also check the current leaderboards, level up and heal themselves using potions.
+* rs.stats (username) — display a users high score stats.
+* rs.item (name/id) — display information about the queried item.
+* rs.item random — display information about a random item in runescape.
 
-* rpg2 — basic command, if user has no character, create one for them, otherwise display users player data.
-* rpg2.fight — generate a random monster for the player to fight.
-* rpg2.potion — use one of your players potion if one is available and you aren't already full hp.
-* rpg2.freepotion — check if you have a free potion available, players may take one every 20 minutes.
-* rpg2.leaders — check the current leaderboards for all living characters.
-* rpg2.fallen — check the best players that have perished while in battle.
-* rpg2.duel @(x) — duel a specific player specified.
 
 ### Contact Me
 If you have any questions or suggestions, feel free to get shoot me a message or get in touch:
