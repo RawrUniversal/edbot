@@ -11,15 +11,16 @@ from edbot.plugins.flip import flip
 from edbot.plugins.gif import gif
 from edbot.plugins.joke import joke
 from edbot.plugins.range import range as prange
-from edbot.plugins.rpg import rpg
 from edbot.plugins.school import school
 from edbot.plugins.server import server
 from edbot.plugins.stats import stats
 
-# rpg2 plugin
-from edbot.plugins.rpg_v2 import rpg2
+from edbot.plugins.vidsync import sync
 
-# from edbot.plugins.member_join import member_join
+from edbot.plugins.runescape import hiscores
+from edbot.plugins.runescape import item_lookup
+
+from edbot.plugins.rpg_v2 import rpg2
 
 # setup logging system for logging to console/file
 # create a timestamp when program starts
@@ -127,128 +128,156 @@ def on_message(message):
                                        embed=stats.get_stats(config_file, client.user.avatar_url, time))
 
     ###################
-    # RPG V2 COMMANDS #
+    # USEFUL COMMANDS #
     ###################
 
-    # if message is ed.rpg2
-    # this is the main rpg2 plugin command, if a author has a character currently, it will display there player
-    # if they do not have a character, generate a random one for them
-    elif message.content == 'ed.rpg2':
-        # first check if the user already has a character currently
-        auth = rpg2.config(logger)
-        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+    elif message.content == 'ed.vidsync':
+        yield from client.send_message(message.channel, sync.generate_link(logger))
+        yield from client.delete_message(message)
 
-        # if a character exists in the database already with the same message.author.id, user already has a
-        # generated character, create embeddable message for this specific character.
-        if exists:
-            em = rpg2.embed_existing_character(rpg2.db_connect(logger, auth), message.author.id)
+    ######################
+    # RUNESCAPE COMMANDS #
+    ######################
+
+    elif message.content.startswith('ed.rs.stats'):
+        rs_stats = hiscores.get_hiscores(hiscores.get_username(message.content))
+        if rs_stats['stats']['overall']['level'] < 50:
+            yield from client.send_message(message.channel, "This account doesn't exist, or, the stats are too low!")
+        else:
+            em = hiscores.gen_embed(rs_stats)
             yield from client.send_message(message.channel, embed=em)
 
-        # if a player does not exist in the database with the same message.author.id, user has no character,
-        # generate one for them, and make it embeddable.
-        else:
-            # generate a player for the message senders unique id, adding it to the database
-            rpg2.generate_new_character(rpg2.db_connect(logger, auth), message.author.id, message.author,
-                                        message.server.name, logger)
-
-            yield from client.send_message(message.channel,
-                                           "You don't have a character yet, I've generated one for you!")
-
-            # create embeddable message containing all information about the player created for message author
-            em = rpg2.embed_existing_character(rpg2.db_connect(logger, auth), message.author.id)
-            yield from client.send_message(message.channel, embed=em)
-
-    # if message is ed.rpg2.fight
-    # generate a random enemy for the author's character to fight, if the player is killed, their player is
-    # permanently deleted, but stored separately to track fallen heroes
-    elif message.content == 'ed.rpg2.fight':
-        # first check if the user has character already created
-        auth = rpg2.config(logger)
-        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
-
-        if exists:
-            msg = rpg2.fight_monster(rpg2.db_connect(logger, auth), message.author.id)
-            yield from client.send_message(message.channel, msg)
-        else:
-            yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
-                                                            " generate one!")
-
-    # if message is ed.rpg2.potion
-    # attempt to heal the player by using one of their potions
-    elif message.content == 'ed.rpg2.potion':
-        # first check if the user has character already created
-        auth = rpg2.config(logger)
-        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
-
-        if exists:
-            msg = rpg2.use_potion(rpg2.db_connect(logger, auth), message.author.id)
-            yield from client.send_message(message.channel, msg)
-        else:
-            yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
-                                                            " generate one!")
-    # if message is ed.rpg2.freepotion
-    # check the timer on author free potion field in db, if it has surpassed the current time, give them 1 free potion
-    elif message.content == 'ed.rpg2.freepotion':
-        # first check if the user has character already created
-        auth = rpg2.config(logger)
-        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
-
-        if exists:
-            msg = rpg2.get_free_potion(rpg2.db_connect(logger, auth), message.author.id)
-            yield from client.send_message(message.channel, msg)
-        else:
-            yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
-                                                            " generate one!")
-
-    # if message is ed.epg2.leaders
-    # display the current leader boards for all characters still alive
-    elif message.content == 'ed.rpg2.leaders':
-        auth = rpg2.config(logger)
-        em = rpg2.gen_leader_embeds(rpg2.db_connect(logger, auth))
-        yield from client.send_message(message.channel, embed=em)
-
-    # if message is ed.epg2.fallen
-    # display the current leader boards for all characters that have been defeated
-    elif message.content == 'ed.rpg2.fallen':
-        auth = rpg2.config(logger)
-        em = rpg2.gen_fallen_heroes_embed(rpg2.db_connect(logger, auth))
-        yield from client.send_message(message.channel, embed=em)
-
-    # if message starts with ed.rpg2.duel
-    # attempt to fight another player the exists
-    elif message.content.startswith('ed.rpg2.duel'):
-        # first check if the user has character already created
-        auth = rpg2.config(logger)
-
-        # check if author has a character before doing anything else
-        exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
-        if exists:
-            # check now if the target also has a character to fight
-            target_id = rpg2.get_target_id(message)
-
-            # if the target idea has returned a ValueError, let the user know that they likely have not @'ed a player
-            if target_id[0] == "T":
-                yield from client.send_message(message.channel, target_id)
-                return
-
-            # if the author is trying to fight there own character
-            if target_id == message.author.id:
-                yield from client.send_message(message.channel, "You can't duel yourself!")
-                return
-
-            target_exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), target_id)
-            if target_exists:
-                em = rpg2.fight_player(rpg2.db_connect(logger, auth), message.author.id, message)
-                yield from client.send_message(message.channel, embed=em)
-                return
-            else:
-                msg = rpg2.fight_player(rpg2.db_connect(logger, auth), message.author.id, message)
-                yield from client.send_message(message.channel, msg)
-                return
-        else:
-            yield from client.send_message(message.channel, "You don't have a character to duel anyone at the moment!"
-                                                            " Type ed.rpg2 to generate one.")
+    elif message.content.startswith('ed.rs.item'):
+        item = item_lookup.check_item(message.content)
+        if item is False:
+            yield from client.send_message(message.channel, "That item doesn't exist!")
             return
+
+        data = item_lookup.request_item_json(item)
+        yield from client.send_message(message.channel, embed=item_lookup.generate_embed(data))
+
+
+
+
+    # ###################
+    # # RPG V2 COMMANDS #
+    # ###################
+    #
+    # # if message is ed.rpg2
+    # # this is the main rpg2 plugin command, if a author has a character currently, it will display there player
+    # # if they do not have a character, generate a random one for them
+    # elif message.content == 'ed.rpg2':
+    #     # first check if the user already has a character currently
+    #     auth = rpg2.config(logger)
+    #     exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+    #
+    #     # if a character exists in the database already with the same message.author.id, user already has a
+    #     # generated character, create embeddable message for this specific character.
+    #     if exists:
+    #         em = rpg2.embed_existing_character(rpg2.db_connect(logger, auth), message.author.id)
+    #         yield from client.send_message(message.channel, embed=em)
+    #
+    #     # if a player does not exist in the database with the same message.author.id, user has no character,
+    #     # generate one for them, and make it embeddable.
+    #     else:
+    #         # generate a player for the message senders unique id, adding it to the database
+    #         rpg2.generate_new_character(rpg2.db_connect(logger, auth), message.author.id, message.author,
+    #                                     message.server.name, logger)
+    #
+    #         yield from client.send_message(message.channel,
+    #                                        "You don't have a character yet, I've generated one for you!")
+    #
+    #         # create embeddable message containing all information about the player created for message author
+    #         em = rpg2.embed_existing_character(rpg2.db_connect(logger, auth), message.author.id)
+    #         yield from client.send_message(message.channel, embed=em)
+    #
+    # # if message is ed.rpg2.fight
+    # # generate a random enemy for the author's character to fight, if the player is killed, their player is
+    # # permanently deleted, but stored separately to track fallen heroes
+    # elif message.content == 'ed.rpg2.fight':
+    #     # first check if the user has character already created
+    #     auth = rpg2.config(logger)
+    #     exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+    #
+    #     if exists:
+    #         msg = rpg2.fight_monster(rpg2.db_connect(logger, auth), message.author.id)
+    #         yield from client.send_message(message.channel, msg)
+    #     else:
+    #         yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
+    #                                                         " generate one!")
+    #
+    # # if message is ed.rpg2.potion
+    # # attempt to heal the player by using one of their potions
+    # elif message.content == 'ed.rpg2.potion':
+    #     # first check if the user has character already created
+    #     auth = rpg2.config(logger)
+    #     exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+    #
+    #     if exists:
+    #         msg = rpg2.use_potion(rpg2.db_connect(logger, auth), message.author.id)
+    #         yield from client.send_message(message.channel, msg)
+    #     else:
+    #         yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
+    #                                                         " generate one!")
+    # # if message is ed.rpg2.freepotion
+    # # check the timer on author free potion field in db, if it has surpassed the current time, give them 1 free potion
+    # elif message.content == 'ed.rpg2.freepotion':
+    #     # first check if the user has character already created
+    #     auth = rpg2.config(logger)
+    #     exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+    #
+    #     if exists:
+    #         msg = rpg2.get_free_potion(rpg2.db_connect(logger, auth), message.author.id)
+    #         yield from client.send_message(message.channel, msg)
+    #     else:
+    #         yield from client.send_message(message.channel, "You don't seem to have a character yet, type ed.rpg2 to"
+    #                                                         " generate one!")
+    #
+    # # if message is ed.epg2.leaders
+    # # display the current leader boards for all characters still alive
+    # elif message.content == 'ed.rpg2.leaders':
+    #     auth = rpg2.config(logger)
+    #     em = rpg2.gen_leader_embeds(rpg2.db_connect(logger, auth))
+    #     yield from client.send_message(message.channel, embed=em)
+    #
+    # # if message is ed.epg2.fallen
+    # # display the current leader boards for all characters that have been defeated
+    # elif message.content == 'ed.rpg2.fallen':
+    #     auth = rpg2.config(logger)
+    #     em = rpg2.gen_fallen_heroes_embed(rpg2.db_connect(logger, auth))
+    #     yield from client.send_message(message.channel, embed=em)
+    #
+    # # if message starts with ed.rpg2.duel
+    # # attempt to fight another player the exists
+    # elif message.content.startswith('ed.rpg2.duel'):
+    #     # first check if the user has character already created
+    #     auth = rpg2.config(logger)
+    #
+    #     # check if author has a character before doing anything else
+    #     exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), message.author.id)
+    #     if exists:
+    #         # check now if the target also has a character to fight
+    #         target_id = rpg2.get_target_id(message)
+    #
+    #         # if the target idea has returned a ValueError, let the user know that they likely have not @'ed a player
+    #         if target_id[0] == "T":
+    #             yield from client.send_message(message.channel, target_id)
+    #
+    #         # if the author is trying to fight there own character
+    #         if target_id == message.author.id:
+    #             yield from client.send_message(message.channel, "You can't duel yourself!")
+    #
+    #         target_exists = rpg2.check_for_existing_char(rpg2.db_connect(logger, auth), target_id)
+    #         if target_exists:
+    #             em = rpg2.fight_player(rpg2.db_connect(logger, auth), message.author.id, message)
+    #             yield from client.send_message(message.channel, embed=em)
+    #         else:
+    #             msg = rpg2.fight_player(rpg2.db_connect(logger, auth), message.author.id, message)
+    #             yield from client.send_message(message.channel, msg)
+    #     else:
+    #         yield from client.send_message(message.channel, "You don't have a character to duel anyone at the moment!"
+    #                                                         " Type ed.rpg2 to generate one.")
+    #         return
 
 
 # attempt to connect client to discord using the discord token located in config.ini file
