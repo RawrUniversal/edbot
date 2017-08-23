@@ -3,8 +3,6 @@
 A Discord bot developed using the [Discord.py](https://github.com/Rapptz/discord.py) API Wrapper.
 
 * Developed using Python 3.4
-* MariaDB 10.1.23 mySQL Database
-
 
 ## Fun Commands:
 All commands should be led with an ed. (eg: ed.gif cats)
