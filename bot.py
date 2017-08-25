@@ -20,8 +20,6 @@ from edbot.plugins.vidsync import sync
 from edbot.plugins.runescape import hiscores
 from edbot.plugins.runescape import item_lookup
 
-from edbot.plugins.rpg_v2 import rpg2
-
 # setup logging system for logging to console/file
 # create a timestamp when program starts
 timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -61,7 +59,7 @@ client = discord.Client()
 @client.event
 @asyncio.coroutine
 def on_ready():
-    logger.info("LOGGED IN AS USER: {} | ID: {}".format(client.user.name, client.user.id))
+    logger.info("LOGGED IN AS: {} | ID: {}".format(client.user.name, client.user.id))
 
 
 # main on_message method, when a message is sent to the discord server, it is parsed and checked to see
@@ -70,53 +68,45 @@ def on_ready():
 @client.event
 @asyncio.coroutine
 def on_message(message):
-
     ################
     # FUN COMMANDS #
     ################
 
-    # if message is ed.flip
     if message.content == 'ed.flip':
-        current_flip = flip.coin_flip(logger, message.author.name)
-        yield from client.send_message(message.channel, current_flip)
-        stats.set_stat('flip', config_file)
+        stats.set_stat('flips', config_file)
+        yield from client.send_message(message.channel, flip.coin_flip(logger, message.author.name))
 
-    # if message starts with ed.range
     elif message.content.startswith('ed.range'):
+        stats.set_stat('ranges', config_file)
         yield from client.send_message(message.channel, prange.pick_number(message.content, logger))
-        stats.set_stat('range', config_file)
 
-    # if message is ed.joke
     elif message.content == 'ed.joke':
+        stats.set_stat('jokes', config_file)
         yield from client.send_message(message.channel, joke.get_joke(logger))
-        stats.set_stat('joke', config_file)
 
     elif message.content.startswith('ed.gif'):
+        stats.set_stat('gifs', config_file)
         yield from client.send_message(message.channel, gif.get_gif_url(message.content, logger, message.author))
-        stats.set_stat('gif', config_file)
 
-    # if message is ed.school
     elif message.content == 'ed.school':
+        stats.set_stat('schools', config_file)
         yield from client.send_message(message.channel, school.school_start())
-        stats.set_stat('school', config_file)
 
     ########################
     # INFORMATION COMMANDS #
     ########################
 
-    # if message is ed.server
     elif message.content == 'ed.server':
+        stats.set_stat('servers', config_file)
         yield from client.send_message(message.channel, embed=server.get_server_information(message.server))
-        stats.set_stat('server', config_file)
 
-    # if message is ed.help
     elif message.content == 'ed.help':
+        stats.set_stat('helps', config_file)
         em = help.create_help_embed(client.user.avatar_url, logger, message.author)
         yield from client.send_message(message.author, embed=em)
-        stats.set_stat('help', config_file)
 
     elif message.content == 'ed.stats':
-        stats.set_stat('stat', config_file)
+        stats.set_stat('stats', config_file)
         yield from client.send_message(message.channel,
                                        embed=stats.get_stats(config_file, client.user.avatar_url, time))
 
@@ -125,14 +115,15 @@ def on_message(message):
     ###################
 
     elif message.content == 'ed.vidsync':
+        stats.set_stat('vidsyncs', config_file)
         yield from client.send_message(message.channel, sync.generate_link(logger))
-        yield from client.delete_message(message)
 
     ######################
     # RUNESCAPE COMMANDS #
     ######################
 
     elif message.content.startswith('ed.rs.stats'):
+        stats.set_stat('rs_stats', config_file)
         rs_stats = hiscores.get_hiscores(hiscores.get_username(message.content))
         if rs_stats['stats']['overall']['level'] < 50:
             yield from client.send_message(message.channel, "This account doesn't exist, or, the stats are too low!")
@@ -141,6 +132,7 @@ def on_message(message):
             yield from client.send_message(message.channel, embed=em)
 
     elif message.content.startswith('ed.rs.item'):
+        stats.set_stat('rs_items', config_file)
         item = item_lookup.check_item(message.content)
         if item is False:
             yield from client.send_message(message.channel, "That item doesn't exist!")
@@ -149,10 +141,8 @@ def on_message(message):
         data = item_lookup.request_item_json(item)
         yield from client.send_message(message.channel, embed=item_lookup.generate_embed(data))
 
-# attempt to connect client to discord using the discord token located in config.ini file
 try:
-    client.run(config_file.get('Discord', 'token'))
-# in case any error is thrown, log the error
+    client.run(config_file.get('Discord', 'token'))  # attempt to establish connection to discord server
 except client.on_error as coeerr:
     logger.error("client.run error: [{}]".format(str(coeerr)))
 
